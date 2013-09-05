@@ -60,7 +60,9 @@ class KeystoneBackend(object):
         LOG.debug('Beginning user authentication for user "%s".' % username)
 
         insecure = getattr(settings, 'OPENSTACK_SSL_NO_VERIFY', False)
-
+        endpoint_type = getattr(settings,
+                                'OPENSTACK_ENDPOINT_TYPE',
+                                'publicURL')
         keystone_client = get_keystone_client()
         try:
             client = keystone_client.Client(
@@ -135,9 +137,10 @@ class KeystoneBackend(object):
         self.check_auth_expiry(auth_ref)
 
         # If we made it here we succeeded. Create our User!
+        url = client.service_catalog.url_for(endpoint_type=endpoint_type)
         user = create_user_from_token(request,
                                       Token(auth_ref),
-                                      client.service_catalog.url_for())
+                                      url)
 
         if request is not None:
             request.session['unscoped_token'] = unscoped_token.id
